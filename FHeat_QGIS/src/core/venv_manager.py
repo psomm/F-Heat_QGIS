@@ -333,7 +333,7 @@ def install_packages(progress_callback: Optional[Callable] = None) -> Tuple[bool
             pct = 20 + int((i / total) * 75)
             progress_callback(pct, f"Installiere {pkg}...")
         result = subprocess.run(
-            [python, "-m", "pip", "install", pkg],
+            [python, "-m", "pip", "install", "--only-binary", ":all:", pkg],
             capture_output=True, text=True,
             env=env, **_subprocess_kwargs()
         )
