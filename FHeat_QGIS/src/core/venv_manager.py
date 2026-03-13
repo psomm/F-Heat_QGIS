@@ -82,21 +82,35 @@ def _find_python() -> str:
         return sys.executable
 
     # macOS / Linux: sys.executable may be the QGIS binary, not Python.
-    # The real Python lives in sys.exec_prefix/bin/.
-    bin_dir = os.path.join(sys.exec_prefix, "bin")
-    for name in (ver_name_unix, f"python{sys.version_info.major}", "python3", "python"):
-        candidate = os.path.join(bin_dir, name)
-        if os.path.exists(candidate):
-            _log(f"Python-Interpreter gefunden: {candidate}")
-            return candidate
+    # Python can live in different locations depending on the QGIS build:
+    #   - sys.exec_prefix/bin/         (e.g. Contents/Frameworks/bin/)
+    #   - dirname(sys.executable)/bin/ (e.g. Contents/MacOS/bin/)
+    #   - parent of exec_prefix / bin/ (e.g. Contents/bin/)
+    search_dirs = []
+    for d in (
+        os.path.join(sys.exec_prefix, "bin"),
+        os.path.join(os.path.dirname(sys.executable), "bin"),
+        os.path.join(os.path.dirname(sys.exec_prefix), "bin"),
+        os.path.dirname(sys.executable),  # Python directly next to QGIS binary
+    ):
+        if d not in search_dirs:
+            search_dirs.append(d)
+
+    for bin_dir in search_dirs:
+        for name in (ver_name_unix, f"python{sys.version_info.major}", "python3", "python"):
+            candidate = os.path.join(bin_dir, name)
+            if os.path.exists(candidate):
+                _log(f"Python-Interpreter gefunden: {candidate}")
+                return candidate
 
     # Last resort: sys.executable only if it looks like Python
     if "python" in os.path.basename(sys.executable).lower():
         return sys.executable
 
+    searched = ", ".join(search_dirs)
     raise RuntimeError(
-        f"Kein Python-Interpreter in {bin_dir} gefunden. "
-        "sys.executable ist: " + sys.executable
+        f"Kein Python-Interpreter gefunden. Durchsucht: {searched}. "
+        f"sys.executable ist: {sys.executable}"
     )
 
 
