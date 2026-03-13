@@ -42,8 +42,8 @@ def get_venv_python() -> str:
         candidate = os.path.join(bin_dir, name)
         if os.path.exists(candidate):
             return candidate
-    # venv not yet created — default fallback
-    return os.path.join(bin_dir, "python3")
+    # venv not yet created — preferred name as fallback (used only for existence checks)
+    return os.path.join(bin_dir, f"python{sys.version_info.major}.{sys.version_info.minor}")
 
 
 def get_venv_site_packages() -> str:
@@ -64,22 +64,40 @@ def venv_exists() -> bool:
 
 
 def _find_python() -> str:
-    """Return the real Python interpreter, never qgis.exe."""
-    if sys.platform != "win32":
+    """Return the real Python interpreter.
+
+    On macOS/Linux, sys.executable is the QGIS app binary, not Python.
+    We search sys.exec_prefix/bin/ for a versioned Python binary instead.
+    On Windows, sys.executable is qgis.exe — same issue, search exec_prefix.
+    """
+    ver_name_unix = f"python{sys.version_info.major}.{sys.version_info.minor}"
+    ver_name_win  = f"python{sys.version_info.major}{sys.version_info.minor}.exe"
+
+    if sys.platform == "win32":
+        for name in (ver_name_win, "python3.exe", "python.exe"):
+            for search_dir in (sys.exec_prefix, os.path.dirname(sys.executable)):
+                candidate = os.path.join(search_dir, name)
+                if os.path.exists(candidate):
+                    return candidate
         return sys.executable
-    # On Windows QGIS, sys.executable is qgis.exe.
-    # The Python interpreter lives in sys.exec_prefix.
-    for name in ("python3.exe", "python.exe"):
-        candidate = os.path.join(sys.exec_prefix, name)
+
+    # macOS / Linux: sys.executable may be the QGIS binary, not Python.
+    # The real Python lives in sys.exec_prefix/bin/.
+    bin_dir = os.path.join(sys.exec_prefix, "bin")
+    for name in (ver_name_unix, f"python{sys.version_info.major}", "python3", "python"):
+        candidate = os.path.join(bin_dir, name)
         if os.path.exists(candidate):
+            _log(f"Python-Interpreter gefunden: {candidate}")
             return candidate
-    # Fallback: look next to sys.executable
-    exe_dir = os.path.dirname(sys.executable)
-    for name in ("python3.exe", "python.exe"):
-        candidate = os.path.join(exe_dir, name)
-        if os.path.exists(candidate):
-            return candidate
-    return sys.executable
+
+    # Last resort: sys.executable only if it looks like Python
+    if "python" in os.path.basename(sys.executable).lower():
+        return sys.executable
+
+    raise RuntimeError(
+        f"Kein Python-Interpreter in {bin_dir} gefunden. "
+        "sys.executable ist: " + sys.executable
+    )
 
 
 def _clean_env() -> dict:
@@ -96,17 +114,25 @@ def create_venv(progress_callback: Optional[Callable] = None) -> Tuple[bool, str
     _log(f"Erstelle venv: {VENV_DIR}")
     if progress_callback:
         progress_callback(5, "Erstelle virtuelle Umgebung...")
+    try:
+        host_python = _find_python()
+    except RuntimeError as e:
+        return False, str(e)
+    _log(f"Verwende Python: {host_python}")
     result = subprocess.run(
-        [_find_python(), "-m", "venv", VENV_DIR, "--without-pip"],
+        [host_python, "-m", "venv", VENV_DIR, "--without-pip"],
         capture_output=True, text=True,
         env=_clean_env(), **_subprocess_kwargs()
     )
     if result.returncode != 0:
         return False, f"venv-Erstellung fehlgeschlagen: {result.stderr}"
+    # After venv creation, resolve the actual python binary inside the venv
+    python = get_venv_python()
+    if not os.path.exists(python):
+        return False, f"venv erstellt, aber Python-Binary nicht gefunden: {python}"
     # Bootstrap pip (QGIS Python often ships without ensurepip/pip in venv)
     if progress_callback:
         progress_callback(10, "Bootstrap pip...")
-    python = get_venv_python()
     pip_result = subprocess.run(
         [python, "-m", "ensurepip", "--upgrade"],
         capture_output=True, text=True,
