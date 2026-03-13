@@ -10,6 +10,7 @@ from qgis.core import QgsMessageLog, Qgis
 PLUGIN_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 PYTHON_VERSION = f"py{sys.version_info.major}.{sys.version_info.minor}"
 VENV_DIR = os.path.join(PLUGIN_DIR, f"venv_{PYTHON_VERSION}")
+_PYTHON_HOME_FILE = os.path.join(VENV_DIR, ".python_home")
 
 # Aus deiner requirements.txt
 REQUIRED_PACKAGES = [
@@ -192,6 +193,33 @@ def _find_python() -> str:
     )
 
 
+def _save_python_home(python_home: Optional[str]) -> None:
+    """Persist the PYTHONHOME value so later steps can reuse it.
+
+    Only writes the file when *python_home* is a non-empty string.
+    If no file is written, :func:`_load_python_home` will return ``None``,
+    meaning no PYTHONHOME override is needed.
+    """
+    if python_home:
+        try:
+            with open(_PYTHON_HOME_FILE, "w") as f:
+                f.write(python_home)
+        except OSError as exc:
+            _log(f"Warnung: PYTHONHOME konnte nicht gespeichert werden: {exc}", Qgis.Warning)
+
+
+def _load_python_home() -> Optional[str]:
+    """Read a previously saved PYTHONHOME value, if any."""
+    if os.path.isfile(_PYTHON_HOME_FILE):
+        try:
+            with open(_PYTHON_HOME_FILE, "r") as f:
+                value = f.read().strip()
+                return value or None
+        except OSError as exc:
+            _log(f"Warnung: PYTHONHOME konnte nicht gelesen werden: {exc}", Qgis.Warning)
+    return None
+
+
 def _clean_env(python_home: Optional[str] = None) -> dict:
     from .subprocess_utils import get_clean_env_for_venv
     return get_clean_env_for_venv(python_home=python_home)
@@ -257,6 +285,9 @@ def create_venv(progress_callback: Optional[Callable] = None) -> Tuple[bool, str
 
     if result.returncode != 0:
         return False, f"venv-Erstellung fehlgeschlagen: {result.stderr}"
+    # Persist python_home so install_packages() and packages_installed() can
+    # reuse it when invoking the venv Python.
+    _save_python_home(python_home)
     # After venv creation, resolve the actual python binary inside the venv
     python = get_venv_python()
     if not os.path.exists(python):
@@ -267,7 +298,7 @@ def create_venv(progress_callback: Optional[Callable] = None) -> Tuple[bool, str
     pip_result = subprocess.run(
         [python, "-m", "ensurepip", "--upgrade"],
         capture_output=True, text=True,
-        env=_clean_env(), **_subprocess_kwargs()
+        env=_clean_env(python_home), **_subprocess_kwargs()
     )
     if pip_result.returncode != 0:
         _log(f"ensurepip fehlgeschlagen, lade get-pip.py herunter: {pip_result.stderr}", Qgis.Warning)
@@ -280,7 +311,7 @@ def create_venv(progress_callback: Optional[Callable] = None) -> Tuple[bool, str
         bootstrap_result = subprocess.run(
             [python, get_pip_path],
             capture_output=True, text=True,
-            env=_clean_env(), **_subprocess_kwargs()
+            env=_clean_env(python_home), **_subprocess_kwargs()
         )
         if bootstrap_result.returncode != 0:
             return False, f"pip-Bootstrap fehlgeschlagen: {bootstrap_result.stderr}"
@@ -288,14 +319,14 @@ def create_venv(progress_callback: Optional[Callable] = None) -> Tuple[bool, str
     subprocess.run(
         [python, "-m", "pip", "install", "--upgrade", "pip"],
         capture_output=True, text=True,
-        env=_clean_env(), **_subprocess_kwargs()
+        env=_clean_env(python_home), **_subprocess_kwargs()
     )
     return True, "Virtuelle Umgebung erstellt"
 
 
 def install_packages(progress_callback: Optional[Callable] = None) -> Tuple[bool, str]:
     python = get_venv_python()
-    env = _clean_env()
+    env = _clean_env(_load_python_home())
     total = len(REQUIRED_PACKAGES)
     for i, pkg in enumerate(REQUIRED_PACKAGES):
         if progress_callback:
@@ -324,7 +355,7 @@ def packages_installed() -> bool:
     result = subprocess.run(
         [python, "-c", check],
         capture_output=True, text=True,
-        env=_clean_env(), **_subprocess_kwargs()
+        env=_clean_env(_load_python_home()), **_subprocess_kwargs()
     )
     return result.returncode == 0
 
