@@ -25,13 +25,18 @@
     </message>
     <message>
         <location filename="../heat_net_tool.py" line="288"/>
-        <source>Starting Installation. Check cmd for progress.</source>
-        <translation>Starte Installation. Siehe Eingabeaufforderung (CMD) für Fortschritt.</translation>
+        <source>Starting Installation. Check terminal for progress.</source>
+        <translation>Starte Installation. Siehe Terminal für Fortschritt.</translation>
     </message>
     <message>
-        <location filename="../heat_net_tool.py" line="321"/>
+        <location filename="../heat_net_tool.py" line="341"/>
         <source>Process finished or aborted.</source>
         <translation>Prozess abgeschlossen oder abgebrochen.</translation>
+    </message>
+    <message>
+        <location filename="../heat_net_tool.py" line="345"/>
+        <source>Error: Python executable not found: {}</source>
+        <translation>Fehler: Python-Programm nicht gefunden: {}</translation>
     </message>
     <message>
         <location filename="../heat_net_tool.py" line="355"/>
