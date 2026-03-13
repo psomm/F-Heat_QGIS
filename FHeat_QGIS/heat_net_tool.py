@@ -22,8 +22,9 @@
  ***************************************************************************/
 """
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, QThread, pyqtSignal
+from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QAction, QFileDialog, QMessageBox
+from qgis.PyQt.QtWidgets import QAction, QDockWidget, QFileDialog, QMessageBox
 from qgis.core import QgsProject, QgsMapLayer, QgsVectorLayer, QgsMessageLog, QgsLayerTreeLayer
 
 # Initialize Qt resources from file resources.py
@@ -264,6 +265,8 @@ class HeatNetTool:
                 self.tr(u'&F|Heat '),
                 action)
             self.iface.removeToolBarIcon(action)
+        if hasattr(self, 'dock'):
+            self.iface.removeDockWidget(self.dock)
 
     def check_python_version(self):
         '''Checks QGIS python version'''
@@ -2036,6 +2039,9 @@ class HeatNetTool:
         if self.first_start == True:
             self.first_start = False
             self.dlg = HeatNetToolDialog()
+            self.dock = QDockWidget(self.tr('F|Heat'), self.iface.mainWindow())
+            self.dock.setWidget(self.dlg)
+            self.iface.addDockWidget(Qt.RightDockWidgetArea, self.dock)
 
             # check modules
             try:
@@ -2069,7 +2075,12 @@ class HeatNetTool:
             ### Load ###
 
             # download options
-            self.load_download_options()
+            try:
+                self.load_download_options()
+            except Exception as e:
+                _msg = self.tr('⚠ Pakete fehlen – bitte "Pakete installieren" klicken und QGIS neu starten.')
+                self.dlg.intro_label.setText(_msg)
+                self.dlg.intro_label.setStyleSheet('color: orange')
             
             # shape paths
             self.dlg.load_pushButton_buildings.clicked.connect(
@@ -2173,7 +2184,7 @@ class HeatNetTool:
         #     lambda: self.load_attributes('dhnx_comboBox_buildings', 'dhnx_comboBox_power'))
 
         # show the dialog
-        self.dlg.show()
+        self.dock.show()
 
     # -------------------------------------------------------------------------
     # DHNx Optimisation

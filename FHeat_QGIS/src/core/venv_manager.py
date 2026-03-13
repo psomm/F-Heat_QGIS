@@ -32,7 +32,18 @@ def _log(msg: str, level=Qgis.Info):
 def get_venv_python() -> str:
     if sys.platform == "win32":
         return os.path.join(VENV_DIR, "Scripts", "python.exe")
-    return os.path.join(VENV_DIR, "bin", "python")
+    bin_dir = os.path.join(VENV_DIR, "bin")
+    for name in (
+        f"python{sys.version_info.major}.{sys.version_info.minor}",
+        f"python{sys.version_info.major}",
+        "python3",
+        "python",
+    ):
+        candidate = os.path.join(bin_dir, name)
+        if os.path.exists(candidate):
+            return candidate
+    # venv not yet created — default fallback
+    return os.path.join(bin_dir, "python3")
 
 
 def get_venv_site_packages() -> str:
@@ -102,8 +113,20 @@ def create_venv(progress_callback: Optional[Callable] = None) -> Tuple[bool, str
         env=_clean_env(), **_subprocess_kwargs()
     )
     if pip_result.returncode != 0:
-        # ensurepip might not be available; fall back to downloading get-pip.py
-        _log(f"ensurepip fehlgeschlagen: {pip_result.stderr}", Qgis.Warning)
+        _log(f"ensurepip fehlgeschlagen, lade get-pip.py herunter: {pip_result.stderr}", Qgis.Warning)
+        import urllib.request, tempfile
+        get_pip_path = os.path.join(tempfile.gettempdir(), "get-pip.py")
+        try:
+            urllib.request.urlretrieve("https://bootstrap.pypa.io/get-pip.py", get_pip_path)
+        except Exception as e:
+            return False, f"get-pip.py konnte nicht heruntergeladen werden: {e}"
+        bootstrap_result = subprocess.run(
+            [python, get_pip_path],
+            capture_output=True, text=True,
+            env=_clean_env(), **_subprocess_kwargs()
+        )
+        if bootstrap_result.returncode != 0:
+            return False, f"pip-Bootstrap fehlgeschlagen: {bootstrap_result.stderr}"
     # Upgrade pip to latest
     subprocess.run(
         [python, "-m", "pip", "install", "--upgrade", "pip"],

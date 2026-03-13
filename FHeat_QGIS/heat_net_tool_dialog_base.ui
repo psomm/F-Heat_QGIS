@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
  <class>HeatNetToolDialogBase</class>
- <widget class="QDialog" name="HeatNetToolDialogBase">
+ <widget class="QWidget" name="HeatNetToolDialogBase">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -2842,6 +2842,493 @@ p, li { white-space: pre-wrap; }
               <size>
                <width>40</width>
                <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+          </layout>
+         </widget>
+         <widget class="QWidget" name="tab_dhnx">
+          <attribute name="title">
+           <string>DHNx Optimisation</string>
+          </attribute>
+          <layout class="QVBoxLayout" name="verticalLayout_dhnx">
+           <item>
+            <widget class="QTextBrowser" name="dhnx_textBrowser">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>180</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>200</height>
+              </size>
+             </property>
+             <property name="html">
+              <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Arial','sans-serif'; font-size:8pt;&quot;&gt;
+&lt;p&gt;&lt;span style=&quot; font-size:10pt; font-weight:600;&quot;&gt;DHNx Investment Optimisation (Proof of Concept)&lt;/span&gt;&lt;/p&gt;
+&lt;p style=&quot; font-size:9pt;&quot;&gt;Answers the following planning questions using the DHNx library and the HiGHS LP/MILP solver:&lt;/p&gt;
+&lt;ul style=&quot; font-size:9pt;&quot;&gt;
+&lt;li&gt;What is the cost-optimal topology and dimensioning of a DHS piping system?&lt;/li&gt;
+&lt;li&gt;What is the cost-optimal expansion of a given DHS system?&lt;/li&gt;
+&lt;li&gt;Is it cost-efficient to build a DHS at all (central vs. de-central supply)?&lt;/li&gt;
+&lt;li&gt;What is the optimal dispatch of the heat producers?&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p style=&quot; font-size:9pt;&quot;&gt;Select the network layer produced by &lt;b&gt;Network Analysis&lt;/b&gt;, the buildings layer, and the source layer. The optimiser decides which pipe segments to invest in and at what capacity.&lt;/p&gt;
+&lt;p style=&quot; font-size:9pt; color:#ff8800;&quot;&gt;Requires: dhnx, oemof-solph, highspy (install via &quot;Install Packages&quot; or pip).&lt;/p&gt;
+&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="openExternalLinks">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QFrame" name="dhnx_frame_input">
+             <property name="frameShape">
+              <enum>QFrame::StyledPanel</enum>
+             </property>
+             <property name="frameShadow">
+              <enum>QFrame::Raised</enum>
+             </property>
+             <layout class="QGridLayout" name="dhnx_gridLayout_input">
+              <item row="0" column="0" colspan="2">
+               <widget class="QTextBrowser" name="dhnx_textBrowser_input">
+                <property name="maximumSize">
+                 <size>
+                  <width>16777215</width>
+                  <height>25</height>
+                 </size>
+                </property>
+                <property name="html">
+                 <string>&lt;html&gt;&lt;body style=&quot; font-size:9pt;&quot;&gt;&lt;p&gt;&lt;b&gt;Input Layers&lt;/b&gt; – select the outputs from Network Analysis&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="0">
+               <widget class="QLabel" name="dhnx_label_net">
+                <property name="text">
+                 <string>Network (net.gpkg)</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="1">
+               <widget class="QgsMapLayerComboBox" name="dhnx_comboBox_net">
+                <property name="allowEmptyLayer">
+                 <bool>false</bool>
+                </property>
+                <property name="showCrs">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="0">
+               <widget class="QLabel" name="dhnx_label_buildings">
+                <property name="text">
+                 <string>Buildings</string>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="1">
+               <widget class="QgsMapLayerComboBox" name="dhnx_comboBox_buildings">
+                <property name="allowEmptyLayer">
+                 <bool>false</bool>
+                </property>
+                <property name="showCrs">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="0">
+               <widget class="QLabel" name="dhnx_label_heat">
+                <property name="text">
+                 <string>Heat Demand Attr.</string>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="1">
+               <widget class="QComboBox" name="dhnx_comboBox_heat">
+                <property name="minimumSize">
+                 <size>
+                  <width>0</width>
+                  <height>22</height>
+                 </size>
+                </property>
+               </widget>
+              </item>
+              <item row="4" column="0">
+               <widget class="QLabel" name="dhnx_label_power">
+                <property name="text">
+                 <string>Power Attr. [kW]</string>
+                </property>
+               </widget>
+              </item>
+              <item row="4" column="1">
+               <widget class="QComboBox" name="dhnx_comboBox_power">
+                <property name="minimumSize">
+                 <size>
+                  <width>0</width>
+                  <height>22</height>
+                 </size>
+                </property>
+               </widget>
+              </item>
+              <item row="5" column="0">
+               <widget class="QLabel" name="dhnx_label_source">
+                <property name="text">
+                 <string>Source / Producer</string>
+                </property>
+               </widget>
+              </item>
+              <item row="5" column="1">
+               <widget class="QgsMapLayerComboBox" name="dhnx_comboBox_source">
+                <property name="allowEmptyLayer">
+                 <bool>false</bool>
+                </property>
+                <property name="showCrs">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item row="6" column="0">
+               <widget class="QLabel" name="dhnx_label_study_area">
+                <property name="toolTip">
+                 <string>Optional polygon layer that defines the study area. Only buildings whose centroids fall within this polygon will be included as heat consumers. Leave empty to use all buildings.</string>
+                </property>
+                <property name="text">
+                 <string>Study Area (optional)</string>
+                </property>
+               </widget>
+              </item>
+              <item row="6" column="1">
+               <widget class="QgsMapLayerComboBox" name="dhnx_comboBox_study_area">
+                <property name="toolTip">
+                 <string>Optional polygon layer that defines the study area. Only buildings whose centroids fall within this polygon will be included as heat consumers. Leave empty to use all buildings.</string>
+                </property>
+                <property name="allowEmptyLayer">
+                 <bool>true</bool>
+                </property>
+                <property name="showCrs">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item>
+            <widget class="QFrame" name="dhnx_frame_params">
+             <property name="frameShape">
+              <enum>QFrame::StyledPanel</enum>
+             </property>
+             <property name="frameShadow">
+              <enum>QFrame::Raised</enum>
+             </property>
+             <layout class="QGridLayout" name="dhnx_gridLayout_params">
+              <item row="0" column="0" colspan="4">
+               <widget class="QTextBrowser" name="dhnx_textBrowser_params">
+                <property name="maximumSize">
+                 <size>
+                  <width>16777215</width>
+                  <height>25</height>
+                 </size>
+                </property>
+                <property name="html">
+                 <string>&lt;html&gt;&lt;body style=&quot; font-size:9pt;&quot;&gt;&lt;p&gt;&lt;b&gt;Pipe Investment Parameters&lt;/b&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="0">
+               <widget class="QLabel" name="dhnx_label_capex">
+                <property name="toolTip">
+                 <string>Variable investment cost per installed thermal capacity and metre of trench [€/(kW·m)]</string>
+                </property>
+                <property name="text">
+                 <string>capex_pipes [€/(kW·m)]</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="1">
+               <widget class="QDoubleSpinBox" name="dhnx_doubleSpinBox_capex">
+                <property name="toolTip">
+                 <string>Variable investment cost per installed thermal capacity and metre of trench [€/(kW·m)]</string>
+                </property>
+                <property name="minimum">
+                 <double>0.000100000000000</double>
+                </property>
+                <property name="maximum">
+                 <double>10000.000000000000000</double>
+                </property>
+                <property name="singleStep">
+                 <double>0.100000000000000</double>
+                </property>
+                <property name="value">
+                 <double>2.000000000000000</double>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="2">
+               <widget class="QLabel" name="dhnx_label_cap_max">
+                <property name="toolTip">
+                 <string>Maximum installable thermal capacity per pipe segment [kW]</string>
+                </property>
+                <property name="text">
+                 <string>cap_max [kW]</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="3">
+               <widget class="QDoubleSpinBox" name="dhnx_doubleSpinBox_cap_max">
+                <property name="toolTip">
+                 <string>Maximum installable thermal capacity per pipe segment [kW]</string>
+                </property>
+                <property name="minimum">
+                 <double>1.000000000000000</double>
+                </property>
+                <property name="maximum">
+                 <double>10000000.000000000000000</double>
+                </property>
+                <property name="singleStep">
+                 <double>1000.000000000000000</double>
+                </property>
+                <property name="value">
+                 <double>100000.000000000000000</double>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="0">
+               <widget class="QLabel" name="dhnx_label_l_factor">
+                <property name="toolTip">
+                 <string>Relative heat loss factor [kW_loss / (m · kW_installed)]</string>
+                </property>
+                <property name="text">
+                 <string>l_factor [kW/(m·kW)]</string>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="1">
+               <widget class="QDoubleSpinBox" name="dhnx_doubleSpinBox_l_factor">
+                <property name="toolTip">
+                 <string>Relative heat loss factor [kW_loss / (m · kW_installed)]</string>
+                </property>
+                <property name="decimals">
+                 <number>7</number>
+                </property>
+                <property name="minimum">
+                 <double>0.000000000000000</double>
+                </property>
+                <property name="maximum">
+                 <double>1.000000000000000</double>
+                </property>
+                <property name="singleStep">
+                 <double>0.000010000000000</double>
+                </property>
+                <property name="value">
+                 <double>0.000010000000000</double>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="2">
+               <widget class="QLabel" name="dhnx_label_simultaneity">
+                <property name="toolTip">
+                 <string>Simultaneity (concurrency) factor applied to consumer peak loads [0–1]</string>
+                </property>
+                <property name="text">
+                 <string>Simultaneity [-]</string>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="3">
+               <widget class="QDoubleSpinBox" name="dhnx_doubleSpinBox_simultaneity">
+                <property name="toolTip">
+                 <string>Simultaneity (concurrency) factor applied to consumer peak loads [0–1]</string>
+                </property>
+                <property name="minimum">
+                 <double>0.010000000000000</double>
+                </property>
+                <property name="maximum">
+                 <double>1.000000000000000</double>
+                </property>
+                <property name="singleStep">
+                 <double>0.050000000000000</double>
+                </property>
+                <property name="value">
+                 <double>1.000000000000000</double>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="0" colspan="2">
+               <widget class="QCheckBox" name="dhnx_checkBox_nonconvex">
+                <property name="toolTip">
+                 <string>Enable non-convex (MILP) investment: adds fixed costs independent of capacity. Recommended for realistic DHS cost modelling (requires a MILP-capable solver).</string>
+                </property>
+                <property name="text">
+                 <string>Non-convex investment (MILP, fixed costs)</string>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="2">
+               <widget class="QLabel" name="dhnx_label_fix_costs">
+                <property name="toolTip">
+                 <string>Fixed investment cost per metre of trench [€/m] – only used when non-convex is enabled</string>
+                </property>
+                <property name="text">
+                 <string>fix_costs [€/m]</string>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="3">
+               <widget class="QDoubleSpinBox" name="dhnx_doubleSpinBox_fix_costs">
+                <property name="toolTip">
+                 <string>Fixed investment cost per metre of trench [€/m] – only used when non-convex is enabled</string>
+                </property>
+                <property name="minimum">
+                 <double>0.000000000000000</double>
+                </property>
+                <property name="maximum">
+                 <double>100000.000000000000000</double>
+                </property>
+                <property name="singleStep">
+                 <double>10.000000000000000</double>
+                </property>
+                <property name="value">
+                 <double>0.000000000000000</double>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item>
+            <widget class="QFrame" name="dhnx_frame_output">
+             <property name="frameShape">
+              <enum>QFrame::StyledPanel</enum>
+             </property>
+             <property name="frameShadow">
+              <enum>QFrame::Raised</enum>
+             </property>
+             <layout class="QHBoxLayout" name="dhnx_hLayout_output">
+              <item>
+               <widget class="QLabel" name="dhnx_label_output">
+                <property name="text">
+                 <string>Output (.gpkg)</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLineEdit" name="dhnx_lineEdit_output">
+                <property name="minimumSize">
+                 <size>
+                  <width>0</width>
+                  <height>22</height>
+                 </size>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>16777215</width>
+                  <height>22</height>
+                 </size>
+                </property>
+                <property name="toolTip">
+                 <string>Path for the result GeoPackage containing invested and all candidate pipes</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="dhnx_pushButton_output">
+                <property name="minimumSize">
+                 <size>
+                  <width>25</width>
+                  <height>25</height>
+                 </size>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>25</width>
+                  <height>25</height>
+                 </size>
+                </property>
+                <property name="font">
+                 <font>
+                  <weight>75</weight>
+                  <bold>true</bold>
+                 </font>
+                </property>
+                <property name="text">
+                 <string>...</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="dhnx_pushButton_start">
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>22</height>
+              </size>
+             </property>
+             <property name="font">
+              <font>
+               <weight>75</weight>
+               <bold>true</bold>
+              </font>
+             </property>
+             <property name="text">
+              <string>Run DHNx Optimisation</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QProgressBar" name="dhnx_progressBar">
+             <property name="value">
+              <number>0</number>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="dhnx_label_feedback">
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>22</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>22</height>
+              </size>
+             </property>
+             <property name="text">
+              <string/>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignCenter</set>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <spacer name="dhnx_verticalSpacer">
+             <property name="orientation">
+              <enum>Qt::Vertical</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>20</width>
+               <height>40</height>
               </size>
              </property>
             </spacer>
