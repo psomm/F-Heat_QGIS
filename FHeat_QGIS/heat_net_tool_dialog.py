@@ -32,7 +32,7 @@ FORM_CLASS, _ = uic.loadUiType(os.path.join(
     os.path.dirname(__file__), 'heat_net_tool_dialog_base.ui'))
 
 
-class HeatNetToolDialog(QtWidgets.QDialog, FORM_CLASS):
+class HeatNetToolDialog(QtWidgets.QWidget, FORM_CLASS):
     def __init__(self, parent=None):
         """Constructor."""
         super(HeatNetToolDialog, self).__init__(parent)
