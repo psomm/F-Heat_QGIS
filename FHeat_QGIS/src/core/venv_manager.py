@@ -226,6 +226,35 @@ def create_venv(progress_callback: Optional[Callable] = None) -> Tuple[bool, str
         capture_output=True, text=True,
         env=_clean_env(python_home), **_subprocess_kwargs()
     )
+
+    # On Linux (and macOS when no .app-bundle PYTHONHOME was found), a
+    # QGIS-bundled Python (AppImage, Flatpak, …) needs PYTHONHOME to locate
+    # its standard library.  Detect this by the well-known error message and
+    # retry with sys.exec_prefix as PYTHONHOME.
+    if (
+        result.returncode != 0
+        and "platform independent libraries" in result.stderr
+        and python_home is None
+        and sys.platform != "win32"
+    ):
+        python_home = sys.exec_prefix
+        _log(
+            f"venv-Erstellung fehlgeschlagen (Bibliotheken nicht gefunden). "
+            f"Wiederhole mit PYTHONHOME={python_home}",
+            Qgis.Warning,
+        )
+        # Remove any partial venv directory left by the failed attempt.
+        if os.path.exists(VENV_DIR):
+            try:
+                shutil.rmtree(VENV_DIR)
+            except OSError as exc:
+                _log(f"Warnung: Konnte unvollständiges venv nicht löschen: {exc}", Qgis.Warning)
+        result = subprocess.run(
+            [host_python, "-m", "venv", VENV_DIR, "--without-pip"],
+            capture_output=True, text=True,
+            env=_clean_env(python_home), **_subprocess_kwargs()
+        )
+
     if result.returncode != 0:
         return False, f"venv-Erstellung fehlgeschlagen: {result.stderr}"
     # After venv creation, resolve the actual python binary inside the venv
