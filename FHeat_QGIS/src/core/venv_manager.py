@@ -1,4 +1,5 @@
 import os
+import shutil
 import sys
 import subprocess
 from typing import Optional, Callable, Tuple
@@ -63,6 +64,49 @@ def venv_exists() -> bool:
     return os.path.exists(get_venv_python())
 
 
+def _check_python_candidate(candidate: str) -> bool:
+    """Return True if *candidate* exists, runs, and matches the current major.minor version."""
+    if not os.path.isfile(candidate):
+        return False
+    expected = f"{sys.version_info.major}.{sys.version_info.minor}"
+    try:
+        result = subprocess.run(
+            [candidate, "-c",
+             "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')"],
+            capture_output=True, text=True, timeout=10,
+        )
+        return result.returncode == 0 and result.stdout.strip() == expected
+    except Exception:
+        return False
+
+
+def _find_macos_qgis_pythonhome(host_python: str) -> Optional[str]:
+    """Return PYTHONHOME for a QGIS-bundled Python on macOS, or *None*.
+
+    If *host_python* lives inside a ``*.app`` bundle, look for the
+    ``Python.framework`` directory inside that bundle and return the
+    versioned prefix path (e.g.
+    ``/Applications/QGIS.app/Contents/Frameworks/Python.framework/Versions/3.12``).
+    """
+    real_path = os.path.realpath(host_python)
+    parts = real_path.split(os.sep)
+    app_idx = next((i for i, p in enumerate(parts) if p.endswith(".app")), None)
+    if app_idx is None:
+        return None
+
+    app_contents = os.sep.join(parts[: app_idx + 1]) + os.sep + "Contents"
+    ver = f"{sys.version_info.major}.{sys.version_info.minor}"
+    candidates = [
+        os.path.join(app_contents, "Frameworks", "Python.framework", "Versions", ver),
+        os.path.join(app_contents, "Frameworks", "Python.framework", "Versions", "Current"),
+    ]
+    for candidate in candidates:
+        if os.path.isdir(candidate):
+            _log(f"macOS QGIS-Python: PYTHONHOME → {candidate}")
+            return candidate
+    return None
+
+
 def _find_python() -> str:
     """Return the real Python interpreter.
 
@@ -80,6 +124,40 @@ def _find_python() -> str:
                 if os.path.exists(candidate):
                     return candidate
         return sys.executable
+
+    # macOS: prefer an external (system / Homebrew / framework) Python that can
+    # actually create venvs, before falling back to the QGIS-bundled binary whose
+    # build-time prefix paths may be unavailable on the user's machine.
+    if sys.platform == "darwin":
+        ver = f"{sys.version_info.major}.{sys.version_info.minor}"
+        macos_search = [
+            # 1. System Python
+            "/usr/bin/python3",
+            # 2. Homebrew (Apple Silicon)
+            f"/opt/homebrew/bin/{ver_name_unix}",
+            f"/opt/homebrew/bin/python3",
+            # 3. Homebrew (Intel / x86-64)
+            f"/usr/local/bin/{ver_name_unix}",
+            f"/usr/local/bin/python3",
+            # 4. Python.org standalone framework
+            f"/Library/Frameworks/Python.framework/Versions/{ver}/bin/python3",
+        ]
+        # 5. Versioned binary from PATH (e.g. installed by pyenv or conda)
+        which_path = shutil.which(ver_name_unix)
+        if which_path and which_path not in macos_search:
+            macos_search.append(which_path)
+
+        for candidate in macos_search:
+            if _check_python_candidate(candidate):
+                _log(f"macOS: externer Python-Interpreter gefunden: {candidate}")
+                return candidate
+
+        _log(
+            "macOS: Kein passender externer Python gefunden – verwende QGIS-Python "
+            "(PYTHONHOME wird in create_venv gesetzt).",
+            Qgis.Warning,
+        )
+        # Fall through to QGIS-bundled Python search below.
 
     # macOS / Linux: sys.executable may be the QGIS binary, not Python.
     # Python can live in different locations depending on the QGIS build:
@@ -114,9 +192,9 @@ def _find_python() -> str:
     )
 
 
-def _clean_env() -> dict:
+def _clean_env(python_home: Optional[str] = None) -> dict:
     from .subprocess_utils import get_clean_env_for_venv
-    return get_clean_env_for_venv()
+    return get_clean_env_for_venv(python_home=python_home)
 
 
 def _subprocess_kwargs() -> dict:
@@ -133,10 +211,20 @@ def create_venv(progress_callback: Optional[Callable] = None) -> Tuple[bool, str
     except RuntimeError as e:
         return False, str(e)
     _log(f"Verwende Python: {host_python}")
+
+    # On macOS, if the selected Python lives inside a .app bundle its
+    # build-time stdlib paths may not exist on the user's machine.  Set
+    # PYTHONHOME so the subprocess can locate the standard library.
+    python_home: Optional[str] = None
+    if sys.platform == "darwin":
+        python_home = _find_macos_qgis_pythonhome(host_python)
+        if python_home:
+            _log(f"macOS: PYTHONHOME für venv-Erstellung → {python_home}")
+
     result = subprocess.run(
         [host_python, "-m", "venv", VENV_DIR, "--without-pip"],
         capture_output=True, text=True,
-        env=_clean_env(), **_subprocess_kwargs()
+        env=_clean_env(python_home), **_subprocess_kwargs()
     )
     if result.returncode != 0:
         return False, f"venv-Erstellung fehlgeschlagen: {result.stderr}"
