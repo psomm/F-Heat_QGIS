@@ -194,18 +194,29 @@ def _find_python() -> str:
 
 
 def _save_python_home(python_home: Optional[str]) -> None:
-    """Persist the PYTHONHOME value so later steps can reuse it."""
+    """Persist the PYTHONHOME value so later steps can reuse it.
+
+    Only writes the file when *python_home* is a non-empty string.
+    If no file is written, :func:`_load_python_home` will return ``None``,
+    meaning no PYTHONHOME override is needed.
+    """
     if python_home:
-        with open(_PYTHON_HOME_FILE, "w") as f:
-            f.write(python_home)
+        try:
+            with open(_PYTHON_HOME_FILE, "w") as f:
+                f.write(python_home)
+        except OSError as exc:
+            _log(f"Warnung: PYTHONHOME konnte nicht gespeichert werden: {exc}", Qgis.Warning)
 
 
 def _load_python_home() -> Optional[str]:
     """Read a previously saved PYTHONHOME value, if any."""
     if os.path.isfile(_PYTHON_HOME_FILE):
-        with open(_PYTHON_HOME_FILE, "r") as f:
-            value = f.read().strip()
-            return value or None
+        try:
+            with open(_PYTHON_HOME_FILE, "r") as f:
+                value = f.read().strip()
+                return value or None
+        except OSError as exc:
+            _log(f"Warnung: PYTHONHOME konnte nicht gelesen werden: {exc}", Qgis.Warning)
     return None
 
 
