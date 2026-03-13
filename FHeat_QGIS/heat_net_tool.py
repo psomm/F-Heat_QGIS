@@ -285,7 +285,7 @@ class HeatNetTool:
         None
         '''
         # feedback
-        self.dlg.intro_label.setText(self.tr('Starting Installation. Check terminal for progress.'))
+        self.dlg.intro_label.setText(self.tr('Starting Installation. Check cmd for progress.'))
         self.dlg.intro_label.setStyleSheet('color: orange')
         self.dlg.intro_label.repaint()
 
@@ -295,7 +295,6 @@ class HeatNetTool:
             self.dlg.intro_label.setText(f'Error: {requirements_path} not found.')
             self.dlg.intro_label.setStyleSheet('color: #ff5555')
             self.dlg.intro_label.repaint()
-            return
             
         with open(requirements_path, 'r') as file:
             package_list = [line.strip() for line in file if line.strip()]
@@ -311,36 +310,16 @@ class HeatNetTool:
                 print(f'Error while installing pip: {e}')
 
         current_executable = sys.executable
+        python_executable = os.path.join(os.path.dirname(current_executable), 'python.exe')
 
         try:
-            if sys.platform == 'win32':
-                # On Windows, find python.exe next to sys.executable (the QGIS Python).
-                # Fall back to sys.executable itself if python.exe is not found.
-                python_executable = os.path.join(os.path.dirname(current_executable), 'python.exe')
-                if not os.path.exists(python_executable):
-                    python_executable = current_executable
-                # Execute the "pip install" command to install all packages
-                cmd = [python_executable, "-m", "pip", "install", "--upgrade"] + package_list
-                subprocess.check_call(["cmd", "/K"] + cmd)  # /K keeps window open
-            else:
-                # On macOS and Linux, use sys.executable directly.
-                # PYTHONHOME must be set in the subprocess environment so the Python binary
-                # can find its standard library at the correct runtime location.
-                # The QGIS Python binary is compiled with a build-time sys.prefix that does
-                # not exist on the user's machine; without PYTHONHOME the subprocess Python
-                # fails with "Could not find platform independent libraries".
-                env = os.environ.copy()
-                env['PYTHONHOME'] = sys.prefix
-                cmd = [current_executable, "-m", "pip", "install", "--upgrade"] + package_list
-                subprocess.check_call(cmd, env=env)
-        except subprocess.CalledProcessError:
+            # Execute the "pip install" command to install all packages
+            cmd = [python_executable, "-m", "pip", "install", "--upgrade"] + package_list
+            subprocess.check_call(["cmd", "/K"] + cmd)  # /K ceeps window open
+        except subprocess.CalledProcessError as e:
             # feedback
-            self.dlg.intro_label.setText(self.tr("Process finished or aborted."))
+            self.dlg.intro_label.setText(self.tr(f"Process finished or aborted."))
             self.dlg.intro_label.setStyleSheet("color: white")
-            self.dlg.intro_label.repaint()
-        except FileNotFoundError as e:
-            self.dlg.intro_label.setText(self.tr("Error: Python executable not found: {}").format(str(e)))
-            self.dlg.intro_label.setStyleSheet("color: #ff5555")
             self.dlg.intro_label.repaint()
 
         # Import all packages
